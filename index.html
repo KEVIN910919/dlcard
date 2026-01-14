@@ -5,104 +5,75 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>DLCard</title>
 <style>
-body{margin:0;font-family:system-ui;background:#070A12;color:#EAF0FF}
-header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#0B1022}
-button{background:#7CF7D8;border:0;border-radius:8px;padding:8px 14px;cursor:pointer}
-main{padding:16px}
-.card{background:#0E1633cc;border:1px solid #26325f;border-radius:12px;padding:12px;margin-bottom:12px}
-a{color:#7AA7FF;text-decoration:none}
-nav a{margin-right:10px}
+:root{--bg:#070A12;--bg2:#0B1022;--card:#0E1633cc;--line:#26325f;--text:#EAF0FF;--muted:#AAB7E6;--accent:#7CF7D8;--accent2:#7AA7FF;--r:14px}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui;background:linear-gradient(180deg,var(--bg),var(--bg2));color:var(--text)}
+header{position:sticky;top:0;z-index:9;display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#0B1022;border-bottom:1px solid #26325f}
+nav{display:flex;gap:10px;flex-wrap:wrap}nav a{color:var(--accent2);text-decoration:none;font-size:13px}
+main{padding:12px;max-width:1100px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+button{background:var(--accent);border:0;border-radius:10px;padding:8px 12px;cursor:pointer}button.alt{background:#1a254f;color:#fff;border:1px solid var(--line)}
+input,select,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid var(--line);background:#050914;color:#fff}
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.item{border:1px solid var(--line);border-radius:10px;padding:8px;background:#050914}
+.badge{font-size:12px;color:var(--muted)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.footer{color:var(--muted);font-size:12px;padding:16px;text-align:center}
+@media(max-width:720px){.grid{grid-template-columns:1fr}nav{justify-content:center}header{flex-direction:column;gap:8px}}
 </style>
 </head>
 <body>
 <header>
-  <div>DLCard</div>
+  <b>DLCard</b>
+  <nav>
+    <a href="#/">首頁</a>
+    <a href="#/profile">會員</a>
+    <a href="#/wallet">錢包</a>
+    <a href="#/mall/1">商城</a>
+    <a href="#/topup">儲值</a>
+    <a href="#/admin">後台</a>
+  </nav>
   <div id="authBox"></div>
 </header>
-<nav style="padding:8px 16px">
-  <a href="#/">首頁</a>
-  <a href="#/profile">會員</a>
-  <a href="#/wallet">錢包</a>
-  <a href="#/mall/1">商城</a>
-</nav>
 <main id="app"></main>
+<div class="footer">DLCard Client</div>
 <script>
 const API = "https://apidlcard.dreamlight.site";
-async function api(path, opt={}){
-  return fetch(API+path,{credentials:"include",...opt});
+async function api(path,opt={}){return fetch(API+path,{credentials:"include",headers:{"Content-Type":"application/json"},...opt});}
+async function getMe(){const r=await api('/auth/me'); if(!r.ok) return null; const d=await r.json(); if(d.logged_in===false) return null; return d.user??d;}
+async function renderAuth(){const box=document.getElementById('authBox'); const me=await getMe();
+  if(!me){ box.innerHTML='<button id="loginBtn">Google 登入</button>'; document.getElementById('loginBtn').onclick=async()=>{const r=await fetch(API+'/auth/google',{credentials:'include'}); const d=await r.json(); if(d.auth_url) location.href=d.auth_url; else alert('取得登入網址失敗');}; }
+  else{ box.innerHTML=`歡迎 ${me.nickname||me.email} <button id="logoutBtn" class="alt">登出</button>`; document.getElementById('logoutBtn').onclick=async()=>{await api('/auth/logout',{method:'POST'}); location.reload();}; }
 }
 
-async function getMe(){
-  const r = await api('/auth/me');
-  if(!r.ok) return null;
-  const d = await r.json();
-  if(d.logged_in===false) return null;
-  return d.user ?? d;
+function route(){return (location.hash||'#/').slice(2);} 
+async function router(){const v=document.getElementById('app'); const r=route();
+  if(r.startsWith('bind-phone')){
+    v.innerHTML=`<div class='card'><h3>綁定手機</h3><input id='phone' placeholder='手機號碼'><div class='row'><button id='bind'>送出</button></div></div>`;
+    document.getElementById('bind').onclick=async()=>{const p=document.getElementById('phone').value; await api('/user/bind-phone',{method:'POST',body:JSON.stringify({phone:p})}); location.hash='#/profile';}; return; }
+  if(r.startsWith('profile')){ const me=await getMe(); if(!me){location.hash='#/'; return;} v.innerHTML=`<div class='grid'>
+      <div class='card'><h3>會員資料</h3><pre>${JSON.stringify(me,null,2)}</pre></div>
+      <div class='card'><h3>會員卡 / QR</h3><button id='qr'>產生 QR</button><div id='qrBox' class='badge'></div></div>
+    </div>`; document.getElementById('qr').onclick=async()=>{const r=await api('/user/qr-token',{method:'POST'}); const d=await r.json(); document.getElementById('qrBox').innerText=d.qr_token||JSON.stringify(d);}; return; }
+  if(r.startsWith('wallet')){ const rr=await api('/wallet/ledger'); const d=await rr.json(); v.innerHTML=`<div class='card'><h3>點數流水</h3><pre>${JSON.stringify(d,null,2)}</pre></div>`; return; }
+  if(r.startsWith('mall/')){ const id=r.split('/')[1]; const rr=await api(`/malls/${id}/products`); const d=await rr.json();
+    const items=(d.items||d||[]).map(p=>`<div class='item'><b>${p.name||'商品'}</b><div class='badge'>${p.price||''} 點</div><button onclick="addCart('${p.id||p.product_id||''}')">加入</button></div>`).join('');
+    v.innerHTML=`<div class='card'><h3>商城 ${id}</h3><div class='list'>${items||'無商品'}</div></div>`; return; }
+  if(r.startsWith('checkout')){ const cart=JSON.parse(localStorage.getItem('cart')||'[]'); v.innerHTML=`<div class='card'><h3>結帳</h3><pre>${JSON.stringify(cart,null,2)}</pre><button id='preview'>試算</button><button id='create'>建立訂單</button><pre id='out'></pre></div>`;
+    document.getElementById('preview').onclick=async()=>{const rr=await api('/order/preview',{method:'POST',body:JSON.stringify({items:cart})}); document.getElementById('out').innerText=JSON.stringify(await rr.json(),null,2);};
+    document.getElementById('create').onclick=async()=>{const rr=await api('/order/create',{method:'POST',body:JSON.stringify({items:cart})}); document.getElementById('out').innerText=JSON.stringify(await rr.json(),null,2); localStorage.removeItem('cart');}; return; }
+  if(r.startsWith('topup')){ v.innerHTML=`<div class='card'><h3>儲值</h3><input id='amt' placeholder='金額'><button id='go'>前往付款</button><pre id='out'></pre></div>`; document.getElementById('go').onclick=async()=>{const a=document.getElementById('amt').value; const rr=await api('/topup/create',{method:'POST',body:JSON.stringify({amount:a})}); document.getElementById('out').innerText=JSON.stringify(await rr.json(),null,2);}; return; }
+  if(r.startsWith('admin')){ v.innerHTML=`<div class='card'><h3>Admin</h3><div class='row'><button onclick="adminCall('/admin/users')">會員</button><button onclick="adminCall('/admin/orders')">訂單</button></div><pre id='out'></pre></div>`; return; }
+  v.innerHTML=`<div class='grid'>
+      <div class='card'><h3>首頁</h3><p>歡迎使用 DLCard</p></div>
+      <div class='card'><h3>快速操作</h3><div class='row'><a href="#/profile">會員</a><a href="#/wallet">錢包</a><a href="#/mall/1">商城</a><a href="#/topup">儲值</a></div></div>
+    </div>`;
 }
 
-async function renderAuth(){
-  const box = document.getElementById('authBox');
-  const me = await getMe();
+function addCart(id){ const c=JSON.parse(localStorage.getItem('cart')||'[]'); c.push({id,qty:1}); localStorage.setItem('cart',JSON.stringify(c)); alert('已加入購物車'); location.hash='#/checkout'; }
+async function adminCall(p){ const r=await api(p); document.getElementById('out').innerText=JSON.stringify(await r.json(),null,2); }
 
-  if(!me){
-    box.innerHTML = `<button id="loginBtn">Google 登入</button>`;
-    document.getElementById("loginBtn").onclick = async () => {
-      const r = await fetch(API + "/auth/google", { credentials: "include" });
-      const d = await r.json();
-      if(d.auth_url){
-        location.href = d.auth_url;   // 真正跳去 Google
-      }else{
-        alert("取得 Google 登入網址失敗");
-      }
-    };
-  }else{
-    box.innerHTML = `歡迎 ${me.nickname||me.email} <button id="logoutBtn">登出</button>`;
-    document.getElementById('logoutBtn').onclick = async()=>{
-      await api('/auth/logout',{method:'POST'});
-      location.reload();
-    };
-  }
-}
-
-async function router(){
-  const view = document.getElementById('app');
-  const hash = location.hash || '#/';
-  if(hash.startsWith('#/bind-phone')){
-    view.innerHTML = `<div class='card'><h3>綁定手機</h3><input id='phone' placeholder='手機號碼'><button id='bind'>送出</button></div>`;
-    document.getElementById('bind').onclick = async()=>{
-      const p = document.getElementById('phone').value;
-      await api('/user/bind-phone',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:p})});
-      location.hash='#/profile';
-    };
-  }
-  else if(hash.startsWith('#/profile')){
-    const me = await getMe();
-    if(!me){ location.hash='#/'; return; }
-    view.innerHTML = `<div class='card'><h3>會員資料</h3><pre>${JSON.stringify(me,null,2)}</pre><button id='qr'>產生QR</button><div id='qrBox'></div></div>`;
-    document.getElementById('qr').onclick = async()=>{
-      const r = await api('/user/qr-token',{method:'POST'});
-      const d = await r.json();
-      document.getElementById('qrBox').innerText = d.qr_token;
-    };
-  }
-  else if(hash.startsWith('#/wallet')){
-    const r = await api('/wallet/ledger');
-    const d = await r.json();
-    view.innerHTML = `<div class='card'><h3>點數流水</h3><pre>${JSON.stringify(d,null,2)}</pre></div>`;
-  }
-  else if(hash.startsWith('#/mall/')){
-    const id = hash.split('/')[2];
-    const r = await api(`/malls/${id}/products`);
-    const d = await r.json();
-    view.innerHTML = `<div class='card'><h3>商城 ${id}</h3><pre>${JSON.stringify(d,null,2)}</pre></div>`;
-  }
-  else{
-    view.innerHTML = `<div class='card'><h3>首頁</h3><p>歡迎使用 DLCard</p></div>`;
-  }
-}
-
-window.addEventListener('hashchange', router);
-renderAuth();router();
+window.addEventListener('hashchange',router); renderAuth(); router();
 </script>
 </body>
 </html>
