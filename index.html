@@ -1,16 +1,20 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang='zh-Hant'>
+
 <head>
-  <meta charset="UTF-8" />
-  <title>DLCard Frontend</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset='UTF-8'>
+    <title>DLCard</title>
+    <link rel='stylesheet' href='style.css'>
 </head>
+
 <body>
-  <div class="card">
-    <h1>DLCard Frontend</h1>
-    <button id="loginBtn">使用 Google 登入</button>
-    <pre id="output">尚未讀取狀態</pre>
-  </div>
-  <script src="main.js"></script>
+    <header>
+        <h1>DLCard</h1>
+        <nav><a href='#/'>首頁</a><a href='#/me'>會員</a><a href='#/wallet'>錢包</a><a href='#/mall'>商城</a><a href='#/admin'>Admin</a></nav>
+    </header>
+    <main id='app'></main>
+    <script src='config.js'></script>
+    <script src='main.js'></script>
 </body>
+
 </html>
