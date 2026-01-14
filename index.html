@@ -1,20 +1,125 @@
 <!DOCTYPE html>
-<html lang='zh-Hant'>
-
+<html lang="zh-Hant">
 <head>
-    <meta charset='UTF-8'>
-    <title>DLCard</title>
-    <link rel='stylesheet' href='style.css'>
+  <meta charset="UTF-8" />
+  <title>DLCard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body{font-family:system-ui;background:#0b1022;color:#eaf0ff;margin:0}
+    header{padding:12px 16px;background:#11183a;display:flex;gap:12px;align-items:center}
+    a{color:#7cf7d8;text-decoration:none;margin-right:12px}
+    button{background:#7aa7ff;border:none;padding:8px 12px;border-radius:8px;color:#000;cursor:pointer}
+    input{padding:8px;border-radius:6px;border:1px solid #26325f;background:#0e1633;color:#fff}
+    .wrap{max-width:900px;margin:auto;padding:16px}
+    .card{background:#0e1633cc;border:1px solid #26325f;border-radius:12px;padding:16px;margin-bottom:12px}
+  </style>
 </head>
-
 <body>
-    <header>
-        <h1>DLCard</h1>
-        <nav><a href='#/'>首頁</a><a href='#/me'>會員</a><a href='#/wallet'>錢包</a><a href='#/mall'>商城</a><a href='#/admin'>Admin</a></nav>
-    </header>
-    <main id='app'></main>
-    <script src='config.js'></script>
-    <script src='main.js'></script>
-</body>
+<header>
+  <b>DLCard</b>
+  <a href="#/">首頁</a>
+  <a href="#/profile">會員</a>
+  <a href="#/wallet">錢包</a>
+  <a href="#/topup">儲值</a>
+</header>
+<div id="app" class="wrap"></div>
 
+<script>
+const API = "https://apidlcard.dreamlight.site/"; // 改成你的後端
+
+async function api(path, opts={}){
+  return fetch(API+path,{credentials:'include',headers:{'Content-Type':'application/json'},...opts})
+}
+
+async function getMe(){
+  const r = await api('/auth/me');
+  if(!r.ok) return null;
+  return r.json();
+}
+
+function render(html){ document.getElementById('app').innerHTML = html; }
+
+async function home(){
+  const me = await getMe();
+  if(!me){
+    render(`<div class='card'><h2>尚未登入</h2><a href='${API}/auth/google'><button>使用 Google 登入</button></a></div>`);
+    return;
+  }
+  if(me.status === 'PENDING') location.hash = '#/bind-phone';
+  render(`<div class='card'>
+    <h2>歡迎 ${me.nickname||''}</h2>
+    <img src='${me.avatar||''}' width='80'/>
+    <p>${me.email}</p>
+    <p>狀態：${me.status}</p>
+    <button onclick="logout()">登出</button>
+  </div>`);
+}
+
+async function logout(){ await api('/auth/logout',{method:'POST'}); location.hash = '#/'; }
+
+async function bindPhone(){
+  const me = await getMe();
+  if(!me) return location.hash='#/';
+  if(me.status!=='PENDING') return location.hash='#/';
+  render(`<div class='card'>
+    <h2>綁定手機</h2>
+    <input id='phone' placeholder='手機號碼'/>
+    <button onclick='doBind()'>送出</button>
+    <div id='msg'></div>
+  </div>`);
+}
+async function doBind(){
+  const phone = document.getElementById('phone').value;
+  const r = await api('/user/bind-phone',{method:'POST',body:JSON.stringify({phone})});
+  document.getElementById('msg').innerText = r.ok?'成功，回首頁':'失敗';
+  if(r.ok) setTimeout(()=>location.hash='#/',1000);
+}
+
+async function profile(){
+  const r = await api('/user/profile');
+  if(!r.ok) return location.hash='#/';
+  const d = await r.json();
+  render(`<div class='card'><h2>會員資料</h2>
+    <p>卡號：${d.card_id||''}</p>
+    <p>手機：${d.phone||''}</p>
+    <button onclick='genQR()'>產生QR</button>
+    <pre id='qr'></pre></div>`);
+}
+async function genQR(){
+  const r = await api('/user/qr-token',{method:'POST'});
+  const d = await r.json();
+  document.getElementById('qr').innerText = JSON.stringify(d,null,2);
+}
+
+async function wallet(){
+  const r = await api('/wallet/ledger');
+  if(!r.ok) return location.hash='#/';
+  const list = await r.json();
+  render('<h2>錢包</h2>'+list.map(x=>`<div class=card>${x.created_at} ${x.amount} ${x.note||''}</div>`).join(''));
+}
+
+async function topup(){
+  render(`<div class='card'><h2>儲值</h2>
+    <input id='amt' placeholder='金額'/>
+    <button onclick='doTopup()'>送出</button></div>`);
+}
+async function doTopup(){
+  const amt = document.getElementById('amt').value;
+  const r = await api('/topup/create',{method:'POST',body:JSON.stringify({amount:amt})});
+  const d = await r.json();
+  if(d.pay_url) location.href=d.pay_url;
+}
+
+function router(){
+  const h = location.hash.replace('#','')||'/';
+  if(h=='/') home();
+  else if(h=='/bind-phone') bindPhone();
+  else if(h=='/profile') profile();
+  else if(h=='/wallet') wallet();
+  else if(h=='/topup') topup();
+}
+window.addEventListener('hashchange',router);
+router();
+</script>
+</body>
 </html>
