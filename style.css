@@ -1,0 +1,27 @@
+
+body{
+  margin:0;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#0b1022;
+  color:#eaf0ff;
+  font-family:system-ui, sans-serif;
+}
+.card{
+  background:#0e1633;
+  border:1px solid #26325f;
+  border-radius:16px;
+  padding:24px 28px;
+  box-shadow:0 20px 50px rgba(0,0,0,.5);
+  max-width:480px;
+  width:100%;
+}
+h1{margin-top:0}
+pre{
+  background:#070a12;
+  padding:12px;
+  border-radius:8px;
+  overflow:auto;
+}
