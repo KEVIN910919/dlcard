@@ -2,16 +2,28 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8" />
-  <title>DLCard Frontend</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="style.css" />
+  <title>DLCard</title>
+  <meta name="theme-color" content="#0B1022" />
+  <link rel="stylesheet" href="assets/styles.css" />
 </head>
 <body>
-  <div class="card">
-    <h1>DLCard Frontend</h1>
-    <p>Backend status:</p>
-    <pre id="status">Loading...</pre>
+  <div id="app">
+    <div class="boot">
+      <div class="bootCard">
+        <div class="logoRow">
+          <div class="logoMark"></div>
+          <div class="logoText">
+            <b>DLCard</b>
+            <span>夢光創意｜會員與點數系統</span>
+          </div>
+        </div>
+        <div class="muted" style="margin-top:10px">載入中…</div>
+      </div>
+    </div>
   </div>
-  <script src="main.js"></script>
+
+  <script src="assets/config.js"></script>
+  <script src="assets/app.js" type="module"></script>
 </body>
 </html>
