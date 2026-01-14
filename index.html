@@ -43,11 +43,24 @@ async function getMe(){
 async function renderAuth(){
   const box = document.getElementById('authBox');
   const me = await getMe();
+
   if(!me){
-    box.innerHTML = `<a href="${API}/auth/google"><button>Google 登入</button></a>`;
+    box.innerHTML = `<button id="loginBtn">Google 登入</button>`;
+    document.getElementById("loginBtn").onclick = async () => {
+      const r = await fetch(API + "/auth/google", { credentials: "include" });
+      const d = await r.json();
+      if(d.auth_url){
+        location.href = d.auth_url;   // 真正跳去 Google
+      }else{
+        alert("取得 Google 登入網址失敗");
+      }
+    };
   }else{
     box.innerHTML = `歡迎 ${me.nickname||me.email} <button id="logoutBtn">登出</button>`;
-    document.getElementById('logoutBtn').onclick = async()=>{await api('/auth/logout',{method:'POST'});location.reload();};
+    document.getElementById('logoutBtn').onclick = async()=>{
+      await api('/auth/logout',{method:'POST'});
+      location.reload();
+    };
   }
 }
 
