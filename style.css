@@ -1,0 +1,32 @@
+body{
+  background:#0b1022;
+  color:#eaf0ff;
+  font-family:system-ui;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+.card{
+  background:#111a3a;
+  padding:30px;
+  border-radius:16px;
+  box-shadow:0 20px 40px rgba(0,0,0,.5);
+  text-align:center;
+}
+button{
+  margin:15px 0;
+  padding:10px 20px;
+  border-radius:999px;
+  border:none;
+  background:#7cf7d8;
+  color:#000;
+  font-weight:bold;
+  cursor:pointer;
+}
+pre{
+  text-align:left;
+  background:#050914;
+  padding:10px;
+  border-radius:8px;
+}
