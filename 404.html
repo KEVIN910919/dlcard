@@ -1,0 +1,21 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DLCard</title></head>
+<body>
+<script>
+/**
+ * GitHub Pages SPA fallback:
+ * Convert path-based routes (e.g. /bind-phone) into hash routes (/#/bind-phone)
+ */
+(function(){
+  var l = window.location;
+  var path = l.pathname.replace(/\/+$/, '');
+  if(path === '' || path === '/') { l.replace(l.origin + l.pathname.split('/').slice(0,-1).join('/') + '/'); return; }
+  // keep repo base path
+  var parts = l.pathname.split('/');
+  // If deployed under /<repo>/..., keep that prefix
+  var repoBase = '';
+  if(parts.length >= 2 && parts[1]) repoBase = '/' + parts[1];
+  var route = l.pathname.substring(repoBase.length) + (l.search||'') + (l.hash||'');
+  l.replace(l.origin + repoBase + '/#' + route);
+})();
+</script>
+</body></html>
