@@ -1,1 +1,0 @@
-const API_BASE = 'https://apidlcard.dreamlight.site';
